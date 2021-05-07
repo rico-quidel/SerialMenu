@@ -271,6 +271,11 @@ class SerialMenu
     // number of entries in the current menu
     static uint8_t size;
 
+    // Values used to look for a timeout
+    unsigned long previousMillis = 0;
+    // Time to wait for a timeout in milliseconds
+    long interval = 60000;
+
     // Private constructor for singleton design.
     // Initializes with an empty menu, prepares serial console and staus LED.
     SerialMenu()
@@ -297,6 +302,9 @@ class SerialMenu
     }
 
   public:
+    // Callback function that performs this menu's action
+    void (*actionCallback)();
+
     // Get a pointer to the one singleton instance of this class
     static SerialMenu & get()
     {
@@ -437,7 +445,7 @@ class SerialMenu
     // run the menu. If the user presses a key, it will be parsed, and trigger
     // running the matching menu entry callback action. If not print an error.
     // Returns false if there was no menu input, true if there was
-    bool run(const uint16_t loopDelayMs)
+    bool run(const uint16_t loopDelayMs,  void (*callback)())
     {
       const bool userInputAvailable = Serial.available();
 
@@ -475,6 +483,33 @@ class SerialMenu
         }
       }
       #endif
+
+      #if SERIALMENU_IDLE_TIMEOUT == true
+      {
+        // Get the current time
+        unsigned long currentMillis = millis();
+
+        // Waiting for input
+        if (!userInputAvailable)
+        {
+          // When a timeout occurs, call the function callback given as parameter.
+          if(currentMillis - previousMillis > interval)
+          {
+            // Reset the timer
+            previousMillis = currentMillis;
+
+            // Call the callback runction
+            callback();
+          }
+        }
+        else
+        {
+          // Reset the timer if data is received
+          previousMillis = currentMillis;
+        }
+      }
+      #endif
+
 
       // Process the input
       if (!userInputAvailable)

@@ -435,7 +435,7 @@ class SerialMenu
       
       if (message)
       {
-        Serial.println(value);
+        Serial.println(value, 3);
       }
       return value;
     }
